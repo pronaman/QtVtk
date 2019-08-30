@@ -45,6 +45,9 @@ bool QVTKFramebufferObjectItem::isInitialized() const
 void QVTKFramebufferObjectItem::setProcessingEngine(const std::shared_ptr<ProcessingEngine> processingEngine)
 {
 	m_processingEngine = std::shared_ptr<ProcessingEngine>(processingEngine);
+	//@review woosung
+	m_vtkFboRenderer->setProcessingEngine(m_processingEngine);
+	
 }
 
 
@@ -85,6 +88,10 @@ void QVTKFramebufferObjectItem::resetModelSelection()
 void QVTKFramebufferObjectItem::addModelFromFile(const QUrl &modelPath)
 {
 	qDebug() << "QVTKFramebufferObjectItem::addModelFromFile";
+
+	//if (m_vtkFboRenderer->addDicom(modelPath))
+	//	return;
+
 
 	CommandModelAdd *command = new CommandModelAdd(m_vtkFboRenderer, m_processingEngine, modelPath);
 

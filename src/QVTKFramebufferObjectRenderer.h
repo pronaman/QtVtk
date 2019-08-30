@@ -41,6 +41,8 @@ public:
 	QOpenGLFramebufferObject *createFramebufferObject(const QSize &size);
 
 	void addModelActor(const std::shared_ptr<Model> model);
+	bool addDicom(const QUrl &modelPath);
+
 
 	std::shared_ptr<Model> getSelectedModel() const;
 	bool isModelSelected() const;

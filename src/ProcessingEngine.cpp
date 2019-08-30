@@ -21,37 +21,89 @@ ProcessingEngine::ProcessingEngine()
 {
 }
 
+#include <vtkDICOMImageReader.h>
+#include <vtkImageViewer2.h>
+#include <vtkImageData.h>
+#include <vtkMarchingSquares.h>
+#include <vtkMarchingCubes.h>
 
 const std::shared_ptr<Model> &ProcessingEngine::addModel(const QUrl &modelFilePath)
 {
 	qDebug() << "ProcessingEngine::addModelData()";
 
-	QString modelFilePathExtension = QFileInfo(modelFilePath.toString()).suffix().toLower();
+	QString modelFilePathExtension = QFileInfo(modelFilePath.toString()).suffix().toLower();   
+    
+   vtkSmartPointer<vtkPolyData> inputData;
 
-    vtkSmartPointer<vtkOBJReader> objReader = vtkSmartPointer<vtkOBJReader>::New();
-    vtkSmartPointer<vtkSTLReader> stlReader = vtkSmartPointer<vtkSTLReader>::New();
-    vtkSmartPointer<vtkPolyData> inputData;
+	 if (modelFilePathExtension == "dcm")
+	 {
+		 auto pDcmReader = vtkSmartPointer<vtkDICOMImageReader>::New();
+		 pDcmReader->SetFileName(modelFilePath.toString().toStdString().c_str());
+		 //pDcmReader->SetDirectoryName("D:\\_Genoray\\MyProject\\Studies\\BookVTKProgramming\\data\\CT");
+		 pDcmReader->Update();
 
-	if (modelFilePathExtension == "obj")
+		 vtkSmartPointer<vtkImageData> volume = vtkSmartPointer<vtkImageData>::New();
+		 volume->DeepCopy(pDcmReader->GetOutput());
+
+		 std::shared_ptr<Model> model = std::make_shared<ImageModel>(volume);
+
+		 m_models.push_back(model);
+
+		 return m_models.back();
+	 }
+
+	if(modelFilePathExtension == "obj")
 	{
+		vtkSmartPointer<vtkOBJReader> objReader = vtkSmartPointer<vtkOBJReader>::New();
 		// Read OBJ file
 		objReader->SetFileName(modelFilePath.toString().toStdString().c_str());
 		objReader->Update();
 		inputData = objReader->GetOutput();
 	}
-	else
+	else if(modelFilePathExtension == "stl")
 	{
 		// Read STL file
+		vtkSmartPointer<vtkSTLReader> stlReader = vtkSmartPointer<vtkSTLReader>::New();
 		stlReader->SetFileName(modelFilePath.toString().toStdString().c_str());
 		stlReader->Update();
 		inputData = stlReader->GetOutput();
 	}
+	else if (modelFilePathExtension == "dcm")
+	{
+		auto pDcmReader = vtkSmartPointer<vtkDICOMImageReader>::New();
+		//pDcmReader->SetFileName(modelFilePath.toString().toStdString().c_str());
+		pDcmReader->SetDirectoryName("D:\\_Genoray\\MyProject\\Studies\\BookVTKProgramming\\data\\CT");
+		pDcmReader->Update();
+
+		vtkSmartPointer<vtkImageData> volume = vtkSmartPointer<vtkImageData>::New();
+		volume->DeepCopy(pDcmReader->GetOutput());
+
+		vtkSmartPointer<vtkMarchingCubes> surface = vtkSmartPointer<vtkMarchingCubes>::New();
+		surface->SetInputData(volume);
+		surface->ComputeNormalsOn();
+		surface->SetValue(0, 0.1);
+
+		//vtkSmartPointer<vtkMarchingSquares> surface = vtkSmartPointer<vtkMarchingSquares>::New();
+		//surface->SetInputData(volume);
+		//surface->SetValue(0, 0.1);		
+		surface->Update();
+
+		inputData = surface->GetOutput();
+
+	
+	}
+	else
+	{
+		assert(false);
+		//throw AfxThrowUnsupportedException();
+	}
+
 
 	// Preprocess the polydata
 	vtkSmartPointer<vtkPolyData> preprocessedPolydata = preprocessPolydata(inputData);
 
 	// Create Model instance and insert it into the vector
-	std::shared_ptr<Model> model = std::make_shared<Model>(preprocessedPolydata);
+	std::shared_ptr<Model> model = std::make_shared<PolyDataModel>(preprocessedPolydata);
 
 	m_models.push_back(model);
 

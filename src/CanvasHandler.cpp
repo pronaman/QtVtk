@@ -48,6 +48,7 @@ CanvasHandler::CanvasHandler(int argc, char **argv)
 
 		m_vtkFboItem->setProcessingEngine(m_processingEngine);
 
+
 		connect(m_vtkFboItem, &QVTKFramebufferObjectItem::rendererInitialized, this, &CanvasHandler::startApplication);
 		connect(m_vtkFboItem, &QVTKFramebufferObjectItem::isModelSelectedChanged, this, &CanvasHandler::isModelSelectedChanged);
 		connect(m_vtkFboItem, &QVTKFramebufferObjectItem::selectedModelPositionXChanged, this, &CanvasHandler::selectedModelPositionXChanged);
@@ -94,7 +95,9 @@ void CanvasHandler::openModel(const QUrl &path) const
 
 bool CanvasHandler::isModelExtensionValid(const QUrl &modelPath) const
 {
-	if (modelPath.toString().toLower().endsWith(".stl") || modelPath.toString().toLower().endsWith(".obj"))
+	if (modelPath.toString().toLower().endsWith(".stl") || 
+		modelPath.toString().toLower().endsWith(".obj") ||
+		modelPath.toString().toLower().endsWith(".dcm"))
 	{
 		return true;
 	}

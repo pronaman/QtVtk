@@ -21,6 +21,7 @@
 #include "ProcessingEngine.h"
 #include "QVTKFramebufferObjectItem.h"
 #include "QVTKFramebufferObjectRenderer.h"
+#include "QVTKOpenGLNativeWidget.h"
 
 QVTKFramebufferObjectRenderer::QVTKFramebufferObjectRenderer()
 {
@@ -112,6 +113,9 @@ void QVTKFramebufferObjectRenderer::synchronize(QQuickFramebufferObject *item)
 
 void QVTKFramebufferObjectRenderer::render()
 {
+	if (m_processingEngine == nullptr)
+		return;
+
 	m_vtkRenderWindow->PushState();
 	this->openGLInitState();
 	m_vtkRenderWindow->Start();
@@ -305,10 +309,10 @@ void QVTKFramebufferObjectRenderer::generatePlatform()
 	m_platformModelActor = vtkSmartPointer<vtkActor>::New();
 	m_platformModelActor->SetMapper(platformModelMapper);
 	m_platformModelActor->GetProperty()->SetColor(1, 1, 1);
-	m_platformModelActor->GetProperty()->LightingOn();
+	//m_platformModelActor->GetProperty()->LightingOn();
 	m_platformModelActor->GetProperty()->SetOpacity(1);
-	m_platformModelActor->GetProperty()->SetAmbient(0.45);
-	m_platformModelActor->GetProperty()->SetDiffuse(0.4);
+	//m_platformModelActor->GetProperty()->SetAmbient(0.45);
+	//m_platformModelActor->GetProperty()->SetDiffuse(0.4);
 
 	m_platformModelActor->PickableOff();
 	m_renderer->AddActor(m_platformModelActor);
@@ -321,9 +325,9 @@ void QVTKFramebufferObjectRenderer::generatePlatform()
 
 	m_platformGridActor = vtkSmartPointer<vtkActor>::New();
 	m_platformGridActor->SetMapper(platformGridMapper);
-	m_platformGridActor->GetProperty()->LightingOff();
-	m_platformGridActor->GetProperty()->SetColor(0.45, 0.45, 0.45);
-	m_platformGridActor->GetProperty()->SetOpacity(1);
+	//m_platformGridActor->GetProperty()->LightingOff();
+	//m_platformGridActor->GetProperty()->SetColor(0.45, 0.45, 0.45);
+	//m_platformGridActor->GetProperty()->SetOpacity(1);
 	m_platformGridActor->PickableOff();
 	m_renderer->AddActor(m_platformGridActor);
 
@@ -376,6 +380,21 @@ void QVTKFramebufferObjectRenderer::createLine(const double x1, const double y1,
 	line->GetPointIds()->SetId(1, id_2);
 
 	cells->InsertNextCell(line);
+}
+
+#include "vtkDICOMImageReader.h"
+#include "vtkImageViewer2.h"
+bool QVTKFramebufferObjectRenderer::addDicom(const QUrl &modelPath)
+{
+	auto pDcmReader = vtkSmartPointer<vtkDICOMImageReader>::New();
+	pDcmReader->SetFileName(modelPath.toString().toStdString().c_str());
+	pDcmReader->Update();
+
+	auto pImageViewer = vtkSmartPointer<vtkImageViewer2>::New();
+	pImageViewer->SetInputConnection(pDcmReader->GetOutputPort());
+	pImageViewer->SetRenderWindow(m_vtkRenderWindow);
+	pImageViewer->Render();
+	return true;
 }
 
 void QVTKFramebufferObjectRenderer::addModelActor(const std::shared_ptr<Model> model)
